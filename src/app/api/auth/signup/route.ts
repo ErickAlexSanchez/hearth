@@ -14,7 +14,13 @@ export async function POST(request: Request): Promise<Response> {
     const body = parseWith(signUpSchema, await readJson(request), 'The account details are invalid.')
     const signedIn = await signUp(container, body)
     return jsonResponse({ user: signedIn.user }, 201, 'private, no-store', {
-      'set-cookie': sessionCookie(signedIn.sessionToken, secureCookies()),
+      'set-cookie': sessionCookie(
+        container.issueSessionCookie({
+          sessionToken: signedIn.sessionToken,
+          userId: signedIn.user.id,
+        }),
+        secureCookies(),
+      ),
     })
   })
 }

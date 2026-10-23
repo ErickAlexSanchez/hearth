@@ -1,4 +1,4 @@
-import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
+import { randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 import type { PasswordHasher } from '@/ports/password-hasher'
 
@@ -22,6 +22,14 @@ function parseHash(stored: string): ParsedHash | null {
   }
 }
 
+function encodeHash(salt: Buffer, derived: Buffer): string {
+  return `scrypt$${salt.toString('base64url')}$${derived.toString('base64url')}`
+}
+
+export function formatScryptHash(password: string, salt: Buffer): string {
+  return encodeHash(salt, scryptSync(password, salt, 32))
+}
+
 async function derive(password: string, salt: Buffer, length: number): Promise<Buffer | null> {
   const derived = await scryptAsync(password, salt, length)
   if (!Buffer.isBuffer(derived)) return null
@@ -36,7 +44,7 @@ export function createScryptPasswordHasher(): PasswordHasher {
       if (!derived) {
         throw new Error('Password hashing failed.')
       }
-      return `scrypt$${salt.toString('base64url')}$${derived.toString('base64url')}`
+      return encodeHash(salt, derived)
     },
     async verify(password: string, passwordHash: string): Promise<boolean> {
       const parsed = parseHash(passwordHash)

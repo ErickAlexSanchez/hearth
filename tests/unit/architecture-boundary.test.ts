@@ -34,6 +34,7 @@ describe('module boundaries', () => {
     'src/domain/feed',
     'src/application/feed',
     'src/adapters/postgres/feed-repository.ts',
+    'src/adapters/memory/feed-repository.ts',
     'src/ports/feed-repository.ts',
     'src/app/api/feed',
   ])
@@ -41,6 +42,7 @@ describe('module boundaries', () => {
     'src/domain/coach',
     'src/application/coach',
     'src/adapters/postgres/coach-repository.ts',
+    'src/adapters/memory/coach-repository.ts',
     'src/ports/coach-repository.ts',
     'src/app/api/coach',
   ])

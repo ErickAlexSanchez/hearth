@@ -45,3 +45,20 @@ export function getEnv(): Env {
   if (!cached) cached = parseEnv(process.env)
   return cached
 }
+
+export type ServiceEnv = {
+  DATABASE_URL: string | null
+  DATABASE_READ_URL: string | null
+  SESSION_SECRET: string
+  WEBHOOK_SECRET: string
+  COACH_RETENTION_DAYS: number
+  COACH_ADAPTER: 'fake'
+}
+
+export function readEnvValue(value: string | undefined): string | undefined {
+  return clean(value)
+}
+
+export function hasDatabaseSetting(source: Record<string, string | undefined>): boolean {
+  return clean(source.DATABASE_URL) !== undefined || clean(source.DATABASE_READ_URL) !== undefined
+}
