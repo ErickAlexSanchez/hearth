@@ -19,7 +19,7 @@ async function main(): Promise<void> {
   })
   const timestamp = Math.floor(Date.now() / 1000)
   const header = signWebhook(env.WEBHOOK_SECRET, raw, timestamp)
-  const response = await fetch('http://localhost:3301/api/webhooks/stripe', {
+  const response = await fetch('http://127.0.0.1:3301/api/webhooks/stripe', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',

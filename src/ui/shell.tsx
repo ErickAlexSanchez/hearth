@@ -5,9 +5,12 @@ import { usePathname } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
 import { fetchSession } from '@/ui/api'
 import type { PublicUserJson } from '@/contracts/schemas'
+import { HeaderControls } from '@/ui/header-controls'
+import { useCopy } from '@/ui/preferences'
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const copy = useCopy()
   const sessionQuery = useQuery({
     queryKey: ['session'],
     queryFn: fetchSession,
@@ -16,19 +19,24 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <>
       <header className="site-header">
-        <a className="brand" href="/">
-          <Flame />
-          <span>Hearth</span>
-        </a>
-        <nav aria-label="Primary">
-          <a href="/" aria-current={pathname === '/' ? 'page' : undefined}>
-            Feed
+        <div className="header-identity">
+          <a className="brand" href="/">
+            <Flame />
+            <span>Hearth</span>
           </a>
-          <a href="/coach" aria-current={pathname === '/coach' ? 'page' : undefined}>
-            Coach
-          </a>
-        </nav>
-        <AccountMenu user={sessionQuery.data?.user ?? null} pending={sessionQuery.isPending} />
+          <nav aria-label={copy.primaryNav}>
+            <a href="/" aria-current={pathname === '/' ? 'page' : undefined}>
+              {copy.feed}
+            </a>
+            <a href="/coach" aria-current={pathname === '/coach' ? 'page' : undefined}>
+              {copy.coach}
+            </a>
+          </nav>
+        </div>
+        <div className="header-tools">
+          <HeaderControls />
+          <AccountMenu user={sessionQuery.data?.user ?? null} pending={sessionQuery.isPending} />
+        </div>
       </header>
       <main id="main">{children}</main>
     </>
@@ -37,31 +45,42 @@ export function Shell({ children }: { children: ReactNode }) {
 
 function AccountMenu({ user, pending }: { user: PublicUserJson | null; pending: boolean }) {
   const client = useQueryClient()
+  const copy = useCopy()
   const [error, setError] = useState<string | null>(null)
-  if (pending) return <p className="account-pending">Loading account…</p>
-  if (!user) return <a className="text-link" href="/login">Sign in</a>
+  if (pending) return <p className="account-pending">{copy.loadingAccount}</p>
+  if (!user) {
+    return (
+      <a className="text-link" href="/login">
+        {copy.signIn}
+      </a>
+    )
+  }
   return (
     <div className="account">
       <p>{user.displayName}</p>
-      <p className={user.tier === 'member' ? 'tier member' : 'tier'}>{user.tier === 'member' ? 'Member' : 'Free'}</p>
+      <p className={user.tier === 'member' ? 'tier member' : 'tier'}>{user.tier === 'member' ? copy.member : copy.free}</p>
       <button
         type="button"
         onClick={() => {
-          void signOut(client, setError)
+          void signOut(client, setError, copy.signOutError)
         }}
       >
-        Sign out
+        {copy.signOut}
       </button>
       {error ? <p role="alert">{error}</p> : null}
     </div>
   )
 }
 
-async function signOut(client: ReturnType<typeof useQueryClient>, setError: (value: string | null) => void): Promise<void> {
+async function signOut(
+  client: ReturnType<typeof useQueryClient>,
+  setError: (value: string | null) => void,
+  signOutError: string,
+): Promise<void> {
   setError(null)
   const response = await fetch('/api/auth/logout', { method: 'POST' })
   if (!response.ok) {
-    setError('Could not sign out.')
+    setError(signOutError)
     return
   }
   await client.invalidateQueries({ queryKey: ['session'] })

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
 import { FeedScreen } from '@/ui/feed-screen'
+import { PreferencesProvider } from '@/ui/preferences'
 import { createQueryClient } from '@/ui/providers'
 import { createHearthStore, type HearthStore } from '@/ui/store'
 
@@ -30,7 +31,9 @@ function renderFeed(): HearthStore {
   render(
     <Provider store={store}>
       <QueryClientProvider client={createQueryClient()}>
-        <FeedScreen />
+        <PreferencesProvider>
+          <FeedScreen />
+        </PreferencesProvider>
       </QueryClientProvider>
     </Provider>,
   )

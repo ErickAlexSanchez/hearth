@@ -4,9 +4,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { readErrorMessage } from '@/ui/api'
+import { useCopy } from '@/ui/preferences'
 import { clearComposer, closeComposer, openComposer, setDraft, type RootState } from '@/ui/store'
 
 export function Composer() {
+  const copy = useCopy()
   const dispatch = useDispatch()
   const composerOpen = useSelector((state: RootState) => state.ui.composerOpen)
   const draft = useSelector((state: RootState) => state.ui.draft)
@@ -21,7 +23,7 @@ export function Composer() {
         body: JSON.stringify({ body: draft, visibility }),
       })
       if (!response.ok) {
-        throw new Error(await readErrorMessage(response, 'Could not publish the post.'))
+        throw new Error(await readErrorMessage(response, copy.publishError))
       }
     },
     onSuccess: async () => {
@@ -31,12 +33,12 @@ export function Composer() {
       await client.invalidateQueries({ queryKey: ['feed'] })
     },
     onError: (publishError: unknown) => {
-      setError(publishError instanceof Error ? publishError.message : 'Could not publish the post.')
+      setError(publishError instanceof Error ? publishError.message : copy.publishError)
     },
   })
 
   return (
-    <section className="composer" aria-label="Post composer">
+    <section className="composer" aria-label={copy.composerLabel}>
       <button
         type="button"
         aria-expanded={composerOpen}
@@ -44,7 +46,7 @@ export function Composer() {
           dispatch(composerOpen ? closeComposer() : openComposer())
         }}
       >
-        {composerOpen ? 'Close composer' : 'Write a post'}
+        {composerOpen ? copy.closeComposer : copy.writePost}
       </button>
       {composerOpen ? (
         <form
@@ -54,15 +56,16 @@ export function Composer() {
             publish.mutate()
           }}
         >
-          <label htmlFor="post-body">Post</label>
+          <label htmlFor="post-body">{copy.postLabel}</label>
           <textarea
             id="post-body"
+            maxLength={2000}
             value={draft}
             onChange={(event) => {
               dispatch(setDraft(event.target.value))
             }}
           />
-          <label htmlFor="post-visibility">Who can read this</label>
+          <label htmlFor="post-visibility">{copy.visibilityLabel}</label>
           <select
             id="post-visibility"
             value={visibility}
@@ -71,13 +74,13 @@ export function Composer() {
               if (value === 'public' || value === 'members') setVisibility(value)
             }}
           >
-            <option value="public">Everyone</option>
-            <option value="members">Members</option>
+            <option value="public">{copy.everyone}</option>
+            <option value="members">{copy.members}</option>
           </select>
           {error ? <p role="alert">{error}</p> : null}
           <div className="row">
             <button type="submit" disabled={publish.isPending || draft.trim().length === 0}>
-              {publish.isPending ? 'Publishing…' : 'Publish'}
+              {publish.isPending ? copy.publishing : copy.publish}
             </button>
             <button
               type="button"
@@ -86,7 +89,7 @@ export function Composer() {
                 dispatch(closeComposer())
               }}
             >
-              Cancel
+              {copy.cancel}
             </button>
           </div>
         </form>

@@ -4,10 +4,12 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { ApiError, fetchFeedPage, fetchSession } from '@/ui/api'
 import { Composer } from '@/ui/composer'
 import { PostCard } from '@/ui/post-card'
+import { useCopy } from '@/ui/preferences'
 import { Shell } from '@/ui/shell'
 import { EmptyState, ErrorState, LoadingState } from '@/ui/status'
 
 export function FeedScreen() {
+  const copy = useCopy()
   const isBrowser = typeof window !== 'undefined'
   const sessionQuery = useQuery({
     queryKey: ['session'],
@@ -26,7 +28,7 @@ export function FeedScreen() {
   if (!isBrowser || sessionQuery.isPending) {
     return (
       <Shell>
-        <LoadingState label="Loading Hearth…" />
+        <LoadingState label={copy.loadingHearth} />
       </Shell>
     )
   }
@@ -34,7 +36,7 @@ export function FeedScreen() {
     return (
       <Shell>
         <ErrorState
-          message="Could not load your session."
+          message={copy.sessionError}
           onRetry={() => {
             void sessionQuery.refetch()
           }}
@@ -52,19 +54,19 @@ export function FeedScreen() {
 
   return (
     <Shell>
-      <h1>Feed</h1>
-      <p className="lede">A short shared record of habits worth repeating.</p>
+      <h1>{copy.feed}</h1>
+      <p className="lede">{copy.feedLede}</p>
       <Composer />
-      {feedQuery.isPending ? <LoadingState label="Loading the feed…" /> : null}
+      {feedQuery.isPending ? <LoadingState label={copy.loadingFeed} /> : null}
       {feedQuery.isError ? (
         <ErrorState
-          message="Could not load the feed."
+          message={copy.feedError}
           onRetry={() => {
             void feedQuery.refetch()
           }}
         />
       ) : null}
-      {feedQuery.isSuccess && posts.length === 0 ? <EmptyState message="No posts yet. Write the first one." /> : null}
+      {feedQuery.isSuccess && posts.length === 0 ? <EmptyState message={copy.emptyFeed} /> : null}
       {feedQuery.isSuccess && posts.length > 0 ? (
         <>
           <div className="stack">
@@ -80,7 +82,7 @@ export function FeedScreen() {
               }}
               disabled={feedQuery.isFetchingNextPage}
             >
-              {feedQuery.isFetchingNextPage ? 'Loading more posts…' : 'Load more posts'}
+              {feedQuery.isFetchingNextPage ? copy.loadingMore : copy.loadMore}
             </button>
           ) : null}
         </>
@@ -90,16 +92,17 @@ export function FeedScreen() {
 }
 
 function SignedOut() {
+  const copy = useCopy()
   return (
     <section className="panel">
-      <h1>The feed is for people at Hearth</h1>
-      <p>Sign in to read posts and keep a habit note.</p>
+      <h1>{copy.signedOutTitle}</h1>
+      <p>{copy.signedOutBody}</p>
       <div className="row">
         <a className="button" href="/login">
-          Sign in
+          {copy.signIn}
         </a>
         <a className="button secondary" href="/signup">
-          Create an account
+          {copy.createAccount}
         </a>
       </div>
     </section>

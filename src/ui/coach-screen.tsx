@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react'
 import { ApiError, fetchCoachThread, fetchSession, readCoachStream, readErrorMessage } from '@/ui/api'
 import type { CoachMessageJson } from '@/contracts/schemas'
 import { formatWhen } from '@/ui/format'
+import { useCopy, usePreferences } from '@/ui/preferences'
 import { Shell } from '@/ui/shell'
 import { EmptyState, ErrorState, LoadingState } from '@/ui/status'
 
@@ -14,6 +15,7 @@ type LiveTurn = {
 }
 
 export function CoachScreen() {
+  const copy = useCopy()
   const isBrowser = typeof window !== 'undefined'
   const client = useQueryClient()
   const [question, setQuestion] = useState('')
@@ -47,7 +49,7 @@ export function CoachScreen() {
       if (!response.ok) {
         setQuestion(text)
         setStream(null)
-        setFormError(await readErrorMessage(response, 'The coach could not reply. Try again.'))
+        setFormError(await readErrorMessage(response, copy.coachReplyError))
         return
       }
       await readCoachStream(response, (token) => {
@@ -58,7 +60,7 @@ export function CoachScreen() {
     } catch (error) {
       setQuestion(text)
       setStream(null)
-      setFormError(error instanceof Error ? error.message : 'The coach could not reply. Try again.')
+      setFormError(coachFailureText(error, copy.coachReplyError))
     }
   }
 
@@ -71,17 +73,17 @@ export function CoachScreen() {
 
   return (
     <Shell>
-      <h1>Coach</h1>
+      <h1>{copy.coach}</h1>
       <p className="notice" role="note">
-        <strong>Note:</strong> Hearth Coach shares general habit ideas. This is not medical advice. It will not
-        diagnose you or suggest a dose.
+        <strong>{copy.noteLabel}</strong> {copy.noteBody}
       </p>
       {body()}
       {sessionQuery.data?.user ? (
         <form className="coach-form" onSubmit={(event) => void onSubmit(event)}>
-          <label htmlFor="habit-question">Habit question</label>
+          <label htmlFor="habit-question">{copy.habitQuestion}</label>
           <textarea
             id="habit-question"
+            maxLength={2000}
             value={question}
             onChange={(event) => {
               setQuestion(event.target.value)
@@ -89,7 +91,7 @@ export function CoachScreen() {
           />
           {formError ? <p role="alert">{formError}</p> : null}
           <button type="submit" disabled={stream !== null || question.trim().length === 0}>
-            {stream !== null ? 'Coach is replying…' : 'Ask the coach'}
+            {stream !== null ? copy.coachReplying : copy.askCoach}
           </button>
         </form>
       ) : null}
@@ -97,11 +99,11 @@ export function CoachScreen() {
   )
 
   function body() {
-    if (!isBrowser || sessionQuery.isPending) return <LoadingState label="Loading Hearth…" />
+    if (!isBrowser || sessionQuery.isPending) return <LoadingState label={copy.loadingHearth} />
     if (sessionQuery.isError) {
       return (
         <ErrorState
-          message="Could not load your session."
+          message={copy.sessionError}
           onRetry={() => {
             void sessionQuery.refetch()
           }}
@@ -111,29 +113,29 @@ export function CoachScreen() {
     if (!sessionQuery.data.user) {
       return (
         <section className="panel">
-          <p>Sign in to ask about a habit you want to repeat.</p>
+          <p>{copy.signInHabit}</p>
           <a className="button" href="/login">
-            Sign in
+            {copy.signIn}
           </a>
         </section>
       )
     }
-    if (threadQuery.isPending) return <LoadingState label="Loading your habit notes…" />
+    if (threadQuery.isPending) return <LoadingState label={copy.loadingNotes} />
     if (threadQuery.isError) {
       const unauthorized = threadQuery.error instanceof ApiError && threadQuery.error.name === 'UnauthorizedError'
       if (unauthorized) {
         return (
           <section className="panel">
-            <p>Sign in to ask about a habit you want to repeat.</p>
+            <p>{copy.signInHabit}</p>
             <a className="button" href="/login">
-              Sign in
+              {copy.signIn}
             </a>
           </section>
         )
       }
       return (
         <ErrorState
-          message="Could not load your habit notes."
+          message={copy.notesError}
           onRetry={() => {
             void threadQuery.refetch()
           }}
@@ -143,7 +145,7 @@ export function CoachScreen() {
     return (
       <div className="stack" aria-live="polite">
         {messages.length === 0 && stream === null ? (
-          <EmptyState message="No habit notes yet. Ask about one routine you want to repeat." />
+          <EmptyState message={copy.emptyNotes} />
         ) : null}
         {messages.map((message) => (
           <Message key={message.id} message={message} />
@@ -157,13 +159,21 @@ export function CoachScreen() {
   }
 }
 
+function coachFailureText(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message === 'The coach could not reply. Try again.') return fallback
+  if (error instanceof Error && error.message.length > 0) return error.message
+  return fallback
+}
+
 function Message({ message }: { message: CoachMessageJson }) {
+  const copy = useCopy()
+  const { locale } = usePreferences()
   return (
     <article className={message.role === 'coach' ? 'bubble coach' : 'bubble'}>
-      <p className="author">{message.role === 'coach' ? 'Hearth Coach' : 'You'}</p>
+      <p className="author">{message.role === 'coach' ? copy.hearthCoach : copy.you}</p>
       {message.createdAt ? (
         <p>
-          <time dateTime={message.createdAt}>{formatWhen(message.createdAt)}</time>
+          <time dateTime={message.createdAt}>{formatWhen(message.createdAt, locale)}</time>
         </p>
       ) : null}
       <p>{message.body}</p>

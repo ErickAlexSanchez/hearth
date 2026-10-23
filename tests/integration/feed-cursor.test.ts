@@ -4,7 +4,7 @@ import { authed, readBody, removeUser, signUpUser } from './helpers'
 
 describe('feed cursor', () => {
   it('pages without repeating posts', async () => {
-    const user = await signUpUser('Cursor User')
+    const user = await signUpUser('Page Reader')
     const container = getContainer()
     const base = Date.now() + 24 * 60 * 60 * 1000
     try {

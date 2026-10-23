@@ -3,10 +3,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, fetchPost, fetchSession } from '@/ui/api'
 import { PostCard } from '@/ui/post-card'
+import { useCopy } from '@/ui/preferences'
 import { Shell } from '@/ui/shell'
 import { ErrorState, LoadingState } from '@/ui/status'
 
 export function PostScreen({ id }: { id: string }) {
+  const copy = useCopy()
   const isBrowser = typeof window !== 'undefined'
   const sessionQuery = useQuery({
     queryKey: ['session'],
@@ -22,7 +24,7 @@ export function PostScreen({ id }: { id: string }) {
   if (!isBrowser || sessionQuery.isPending) {
     return (
       <Shell>
-        <LoadingState label="Loading Hearth…" />
+        <LoadingState label={copy.loadingHearth} />
       </Shell>
     )
   }
@@ -30,7 +32,7 @@ export function PostScreen({ id }: { id: string }) {
     return (
       <Shell>
         <ErrorState
-          message="Could not load your session."
+          message={copy.sessionError}
           onRetry={() => {
             void sessionQuery.refetch()
           }}
@@ -42,10 +44,10 @@ export function PostScreen({ id }: { id: string }) {
     return (
       <Shell>
         <section className="panel">
-          <h1>Post</h1>
-          <p>Sign in to read this post.</p>
+          <h1>{copy.postTitle}</h1>
+          <p>{copy.signInToReadPost}</p>
           <a className="button" href="/login">
-            Sign in
+            {copy.signIn}
           </a>
         </section>
       </Shell>
@@ -54,7 +56,7 @@ export function PostScreen({ id }: { id: string }) {
   if (postQuery.isPending) {
     return (
       <Shell>
-        <LoadingState label="Loading the post…" />
+        <LoadingState label={copy.loadingPost} />
       </Shell>
     )
   }
@@ -63,22 +65,22 @@ export function PostScreen({ id }: { id: string }) {
     const missing = postQuery.error instanceof ApiError && postQuery.error.name === 'NotFoundError'
     return (
       <Shell>
-        <h1>Post</h1>
+        <h1>{copy.postTitle}</h1>
         {forbidden ? (
           <div className="status error" role="alert">
-            <p>This post is for members.</p>
-            <a href="/">Back to the feed</a>
+            <p>{copy.membersOnly}</p>
+            <a href="/">{copy.backToFeed}</a>
           </div>
         ) : null}
         {missing ? (
           <div className="status error" role="alert">
-            <p>This post is not available.</p>
-            <a href="/">Back to the feed</a>
+            <p>{copy.postUnavailable}</p>
+            <a href="/">{copy.backToFeed}</a>
           </div>
         ) : null}
         {!forbidden && !missing ? (
           <ErrorState
-            message="Could not load this post."
+            message={copy.postError}
             onRetry={() => {
               void postQuery.refetch()
             }}
@@ -90,7 +92,7 @@ export function PostScreen({ id }: { id: string }) {
 
   return (
     <Shell>
-      <h1>Post</h1>
+      <h1>{copy.postTitle}</h1>
       <PostCard post={postQuery.data} />
     </Shell>
   )

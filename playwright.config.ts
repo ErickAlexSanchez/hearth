@@ -9,7 +9,7 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   use: {
-    baseURL: 'http://localhost:3301',
+    baseURL: 'http://127.0.0.1:3301',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -20,8 +20,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm exec next dev -p 3301',
-    url: 'http://localhost:3301/api/health',
+    command: 'pnpm exec next dev -H 127.0.0.1 -p 3301',
+    url: 'http://127.0.0.1:3301/api/health',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

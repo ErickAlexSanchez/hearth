@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { type FormEvent, useState } from 'react'
 import { readErrorMessage } from '@/ui/api'
+import { HeaderControls } from '@/ui/header-controls'
+import { useCopy } from '@/ui/preferences'
 
 export function AuthScreen({ mode }: { mode: 'sign-in' | 'sign-up' }) {
+  const copy = useCopy()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -22,81 +25,95 @@ export function AuthScreen({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         body: JSON.stringify(signingUp ? { email, password, displayName } : { email, password }),
       })
       if (!response.ok) {
-        setError(await readErrorMessage(response, signingUp ? 'Could not create the account.' : 'Could not sign in.'))
+        setError(await readErrorMessage(response, signingUp ? copy.signUpFailed : copy.signInFailed))
         return
       }
       window.location.assign('/')
-    } catch (submitError) {
-      setError(submitError instanceof Error ? 'Could not reach Hearth.' : 'Could not reach Hearth.')
+    } catch {
+      setError(copy.reachFailed)
     } finally {
       setPending(false)
     }
   }
 
   return (
-    <main id="main" className="auth">
-      <a className="brand" href="/">
-        Hearth
-      </a>
-      <h1>{signingUp ? 'Create your account' : 'Sign in'}</h1>
-      <p className="lede">
-        {signingUp ? 'Start a free hearth and keep a few habits in view.' : 'Welcome back to your hearth.'}
-      </p>
-      <form onSubmit={(event) => void onSubmit(event)}>
+    <>
+      <header className="site-header">
+        <a className="brand" href="/">
+          Hearth
+        </a>
+        <div className="header-tools">
+          <HeaderControls />
+        </div>
+      </header>
+      <main id="main" className="auth">
+        <h1>{signingUp ? copy.signUpTitle : copy.signInTitle}</h1>
+        <p className="lede">{signingUp ? copy.signUpLede : copy.signInLede}</p>
+        <form onSubmit={(event) => void onSubmit(event)}>
+          {signingUp ? (
+            <>
+              <label htmlFor="display-name">{copy.displayNameLabel}</label>
+              <input
+                id="display-name"
+                name="displayName"
+                autoComplete="name"
+                maxLength={80}
+                value={displayName}
+                onChange={(event) => {
+                  setDisplayName(event.target.value)
+                }}
+                required
+              />
+            </>
+          ) : null}
+          <label htmlFor="email">{copy.emailLabel}</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            maxLength={320}
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value)
+            }}
+            required
+          />
+          <label htmlFor="password">{copy.passwordLabel}</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete={signingUp ? 'new-password' : 'current-password'}
+            minLength={8}
+            maxLength={200}
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value)
+            }}
+            required
+          />
+          {error ? <p role="alert">{error}</p> : null}
+          <button type="submit" disabled={pending}>
+            {pending
+              ? signingUp
+                ? copy.creatingAccount
+                : copy.signingIn
+              : signingUp
+                ? copy.createAccountSubmit
+                : copy.signIn}
+          </button>
+        </form>
         {signingUp ? (
-          <>
-            <label htmlFor="display-name">Display name</label>
-            <input
-              id="display-name"
-              name="displayName"
-              autoComplete="name"
-              value={displayName}
-              onChange={(event) => {
-                setDisplayName(event.target.value)
-              }}
-              required
-            />
-          </>
-        ) : null}
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => {
-            setEmail(event.target.value)
-          }}
-          required
-        />
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete={signingUp ? 'new-password' : 'current-password'}
-          value={password}
-          onChange={(event) => {
-            setPassword(event.target.value)
-          }}
-          required
-          minLength={8}
-        />
-        {error ? <p role="alert">{error}</p> : null}
-        <button type="submit" disabled={pending}>
-          {pending ? (signingUp ? 'Creating account…' : 'Signing in…') : signingUp ? 'Create account' : 'Sign in'}
-        </button>
-      </form>
-      {signingUp ? (
-        <p>
-          Already have an account? <a href="/login">Sign in</a>
-        </p>
-      ) : (
-        <p>
-          New here? <a href="/signup">Create an account</a>
-        </p>
-      )}
-    </main>
+          <p>
+            {copy.alreadyHaveAccount} <a href="/login">{copy.signIn}</a>
+          </p>
+        ) : (
+          <p>
+            {copy.newHere} <a href="/signup">{copy.createAccount}</a>
+          </p>
+        )}
+      </main>
+    </>
   )
 }

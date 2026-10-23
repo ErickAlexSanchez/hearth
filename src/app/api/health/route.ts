@@ -20,10 +20,7 @@ export async function GET(request: Request): Promise<Response> {
       }
       return jsonResponse({ status: 'ok' }, 200, 'no-store')
     })
-  } catch (error) {
-    if (error instanceof Error) {
-      return jsonResponse({ status: 'unavailable' }, 503, 'no-store')
-    }
+  } catch {
     return jsonResponse({ status: 'unavailable' }, 503, 'no-store')
   }
 }
