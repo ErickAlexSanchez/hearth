@@ -6,6 +6,12 @@ Hearth is a small membership product: a short feed of everyday habits, and a coa
 
 The portfolio note is [docs/adr/0001-portfolio-version.md](docs/adr/0001-portfolio-version.md). The technical decision is [docs/adr/0002-decision.md](docs/adr/0002-decision.md).
 
+## Live
+
+The public demo is the URL Vercel assigns when this repository is imported and deployed. This repository does not record a production hostname. Import it as one Vercel project. The root directory is the repository root. Hearth is one Next.js app, and this repository does not split it into services.
+
+Postgres stays on this machine. Docker Compose publishes it on port 5434. The deployed app reads `DATABASE_URL`, `DATABASE_READ_URL`, and the other variables in `.env.example` from the Vercel project environment. Those values are not committed. Without them, pages that read Postgres cannot load.
+
 ## Decision
 
 Hearth is a modular monolith. Postgres is the source of truth. Entitlement is checked on the server: a free account receives 403 for a members-only post, and that response does not include the body. The feed list omits members-only posts for a free account. Any signed-in account can publish a public post and ask the coach. Only a member can publish or read a members-only post.
@@ -62,7 +68,9 @@ docs/adr/         0001-portfolio-version.md, 0002-decision.md
 
 Route handlers in `src/app` call use cases in `src/application`. Use cases depend on ports. `src/domain` does not import React, Next.js, Zod, or the Postgres driver. `src/composition/container.ts` is the only file that constructs the repositories and the fake coach.
 
-## Run
+## Local
+
+These addresses are local to this machine. They are not the public demo.
 
 Requirements: Node.js 20 or newer, pnpm 9.15.9 (the `packageManager` in `package.json`), and Docker. CI uses Node.js 22.
 
