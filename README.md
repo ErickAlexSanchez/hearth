@@ -8,13 +8,15 @@ The portfolio note is [docs/adr/0001-portfolio-version.md](docs/adr/0001-portfol
 
 ## Live
 
-The public demo is the URL Vercel assigns when this repository is imported and deployed. This repository does not record a production hostname. Import it as one Vercel project. The root directory is the repository root. Hearth is one Next.js app, and this repository does not split it into services.
+The hosted page is https://hearth-nine-pink.vercel.app. It loads the synthetic membership workspace with no Postgres and no project environment variables. The two demo accounts and the members-only post are seeded in memory on each server process. Entitlement still runs on the server: a free account receives 403 for that post, and the response does not include the body. Sign in with the demo accounts in the Local section. Both can open the coach. The coach screen shows the not-medical-advice notice.
 
-Postgres stays on this machine. Docker Compose publishes it on port 5434. The deployed app reads `DATABASE_URL`, `DATABASE_READ_URL`, and the other variables in `.env.example` from the Vercel project environment. Those values are not committed. Without them, pages that read Postgres cannot load.
+Import this repository as one Vercel project. The root directory is the repository root. Hearth is one Next.js app, and this repository does not split it into services. Postgres is not part of the hosted page. When `DATABASE_URL` is set in the project environment, the app uses Postgres instead, and feed reads use `DATABASE_READ_URL`. Those values are not committed, and the public page does not need them.
+
+The membership webhook stays a local signed simulator. The hosted page does not call Stripe. Posts and coach notes created on the hosted page stay in the process that accepted them. The seeded accounts and the members-only post are present in every process.
 
 ## Decision
 
-Hearth is a modular monolith. Postgres is the source of truth. Entitlement is checked on the server: a free account receives 403 for a members-only post, and that response does not include the body. The feed list omits members-only posts for a free account. Any signed-in account can publish a public post and ask the coach. Only a member can publish or read a members-only post.
+Hearth is a modular monolith. Postgres is the source of truth when `DATABASE_URL` is set. The hosted page leaves that variable unset and uses the in-memory catalog from the Live section. Entitlement is checked on the server: a free account receives 403 for a members-only post, and that response does not include the body. The feed list omits members-only posts for a free account. Any signed-in account can publish a public post and ask the coach. Only a member can publish or read a members-only post.
 
 The coach schema is isolated from the feed. Feed code does not mention coach. Coach code does not import the feed module and does not query `feed.posts`. Coach notes are private to the signed-in person and have a shorter retention window than posts.
 
@@ -37,6 +39,7 @@ src/
       account-writer.ts
       migrate.ts
       query.ts
+    memory/          catalog used when DATABASE_URL is unset
   app/
     page.tsx  login/  signup/  coach/  posts/[id]/
     api/auth/  api/session/  api/feed/  api/feed/[id]/
@@ -55,7 +58,7 @@ src/
     errors.ts  ids.ts
   ports/
   ui/
-  instrumentation.ts   refuses to boot when env is incomplete
+  instrumentation.ts   on Node, checks a configured database; skips that on Edge and during build
   middleware.ts        assigns x-request-id
 
 migrations/001_init.sql
@@ -92,7 +95,7 @@ pnpm dev
 
 Open http://127.0.0.1:3301. `pnpm dev` and `pnpm start` bind to `127.0.0.1` so Windows does not send `localhost` to an IPv6-only socket. The same process serves the route handlers. Postgres is published on host port 5434. In local development both `DATABASE_URL` and `DATABASE_READ_URL` point at `127.0.0.1:5434`.
 
-`pnpm dev` and `pnpm start` refuse to boot when the environment is incomplete. `pnpm build` skips that check.
+When `DATABASE_URL` is unset, `pnpm dev` and `pnpm start` boot the in-memory catalog. When `DATABASE_URL` is set, they refuse to boot if the rest of the environment is incomplete. `pnpm build` skips that check.
 
 Demo accounts created by the seed:
 

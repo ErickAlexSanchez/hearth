@@ -23,6 +23,8 @@ Ship one Next.js process that listens on `127.0.0.1` port 3301. Postgres is the 
 - `src/instrumentation.ts` loads the environment on boot and refuses to start when it is incomplete. It skips that check while `NEXT_PHASE` is `phase-production-build`, so `pnpm build` does not need a database.
 - `src/middleware.ts` assigns `x-request-id` when the request does not already carry one.
 
+When `DATABASE_URL` is unset, the composition root serves an in-memory catalog seeded with the two demo accounts and the members-only post. The Edge middleware only assigns `x-request-id`; it does not read that environment and it does not import the Postgres driver. If `DATABASE_URL` is set and the rest of the environment is incomplete, boot still fails. Local development with `DATABASE_URL` set still uses Postgres, including the read and write URL split. Membership is still read on the server for each request.
+
 ## Consequences
 
 - A physical replica can be introduced by pointing `DATABASE_READ_URL` at another Postgres. Until then, read-your-writes is immediate because both pools use one database. Replica lag is out of scope.

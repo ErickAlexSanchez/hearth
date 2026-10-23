@@ -1,4 +1,4 @@
-import { parseEnv } from '@/composition/env'
+import { hasDatabaseSetting, parseEnv } from '@/composition/env'
 
 const complete = {
   DATABASE_URL: 'postgres://hearth:hearth@localhost:5434/hearth',
@@ -16,6 +16,12 @@ describe('environment', () => {
     expect(env.DATABASE_URL).toBe(complete.DATABASE_URL)
     expect(env.COACH_RETENTION_DAYS).toBe(30)
     expect(env.COACH_ADAPTER).toBe('fake')
+  })
+
+  it('treats a blank database setting as unset', () => {
+    expect(hasDatabaseSetting({})).toBe(false)
+    expect(hasDatabaseSetting({ DATABASE_URL: '   ', DATABASE_READ_URL: '' })).toBe(false)
+    expect(hasDatabaseSetting({ DATABASE_READ_URL: 'postgres://hearth' })).toBe(true)
   })
 
   it('refuses to start when the environment is incomplete, without echoing secrets', () => {
